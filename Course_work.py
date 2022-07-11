@@ -1,7 +1,6 @@
 import requests
 import datetime,time
 from pprint import pprint
-import os
 from tqdm import tqdm
 
 class VK:
@@ -27,8 +26,8 @@ class VK:
            for under_item in item['sizes']:
                sizer = under_item['height'] * under_item['width']
                name_dict[photo_numb]['sizes'][str(sizer)] = under_item['url']
-               if under_item['type'] == 'w':
-                name_dict[photo_numb]['type'] = under_item['type']
+
+
            photo_numb += 1
 
        final_dikt = {}
@@ -42,8 +41,26 @@ class VK:
            timestamp = name_photo[1]['date']
            value = datetime.datetime.fromtimestamp(timestamp)
            final_dikt[name_photo[0]].append(value.strftime('%Y-%m-%d %H:%M:%S'))
-
+       # pprint(final_dikt)
        return final_dikt
+   def create_name_photo(self):
+       final_photo = []
+       dub = []
+       final_temp = self.users_info_photo()
+       for line in final_temp.items():
+           for other in final_temp.items():
+               if line[1][1] == other[1][1] and line[0] != other[0]:
+                   dub.append(line[1][1])
+       for line in final_temp.values():
+           if line[1] in dub:
+               final_photo.append([])
+               final_photo[-1].append(line[0])
+               final_photo[-1].append(str(line[1]) + ' ' + line[2])
+           else:
+               final_photo.append([])
+               final_photo[-1].append(line[0])
+               final_photo[-1].append(str(line[1]))
+       return final_photo
 
 class YandexDisk:
     def __init__(self, token):
@@ -55,12 +72,6 @@ class YandexDisk:
         headers = self.get_headers()
         response2 = requests.get(files_url, headers=headers)
         return response2.json()
-    def get_upload_link(self, savefile):
-        headers = self.get_headers()
-        upload_url = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
-        params = {"path": savefile, "overwrite": "true"}
-        res = requests.get(upload_url, headers=headers, params=params)
-        return res.json()
 
     def creat_folder(self, path):
         headers = self.get_headers()
@@ -68,25 +79,21 @@ class YandexDisk:
         res = requests.put(f'{url}?path={path}', headers=headers)
         return res.json()
 
-    def upload_file(self, savefile, filename):
-        response_href = self.get_upload_link(savefile=savefile)
-        url = response_href.get("href", "")
-        res2 = requests.put(url, data=open(filename, 'rb'))
-        res2.raise_for_status()
-        if res2.status_code == 201:
-         print('!!!Отлично!!!')
+    def upload_vk(self, query):
+        upload_url = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
+        for photo in query:
+            headers = self.get_headers()
+            params = {"url": photo[0], "path": f'VK_photos/{photo[1]}.jpeg', "overwrite": "true"}
+            requests.post(upload_url, headers=headers, params=params)
 
 if __name__ == '__main__':
-    access_token = ''
+    access_token = '...'
     owner_id = 1
     vk = VK(access_token, owner_id)
 
-    TOKEN = ''
+    TOKEN = '...'
     ya = YandexDisk(token=TOKEN)
-    ya.upload_file(savefile="VK_photos/test.txt", filename="C:\\Users\\Андрей\\PycharmProjects\\pythonProject2\\test.txt")
-    mylist = [pprint(vk.users_info_photo()), ya.get_my_files_name(), ya.creat_folder(path='VK_photos')]
+    mylist = [ya.creat_folder(path='VK_photos'), ya.upload_vk(vk.create_name_photo())]
 
     for i in tqdm(mylist):
         time.sleep(0.5)
-
-
