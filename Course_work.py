@@ -2,6 +2,8 @@ import requests
 import datetime,time
 from pprint import pprint
 from tqdm import tqdm
+import json
+import config
 
 class VK:
    url = 'https://api.vk.com/method/'
@@ -43,6 +45,7 @@ class VK:
            final_dikt[name_photo[0]].append(value.strftime('%Y-%m-%d %H:%M:%S'))
        # pprint(final_dikt)
        return final_dikt
+
    def create_name_photo(self):
        final_photo = []
        dub = []
@@ -60,8 +63,38 @@ class VK:
                final_photo.append([])
                final_photo[-1].append(line[0])
                final_photo[-1].append(str(line[1]))
-       return final_photo
+       digit = int(input(f'Доступны к загрузке {len(final_photo)} фотографий. Сколько желаете загрузить? Введите цифру от 1 до {len(final_photo)}:'))
+       while True:
+           if digit > len(final_photo) or digit <= 0:
+               digit = int(input(f'Некорректный ввод, введите цифру от 1 до {len(final_photo)}:'))
+           else: break
 
+
+       # a_dikt = {}
+       a_dikt_list = []
+       index = 0
+       for ln in final_photo:
+           index += 1
+           if index == (digit + 1): break
+           a_dikt_list.append({})
+           if 'size' in ln[0]:
+                size_1 = ln[0].split('=')[1].split('&')[0]
+                a_dikt_list[-1]['file_name'] = ln[1] + '.jpg'
+                a_dikt_list[-1]['size'] = size_1
+           else:
+                size_2 = ln[0].split('/')[6].split('_')[0]
+                a_dikt_list[-1]['file_name'] = ln[1] + '.jpg'
+                a_dikt_list[-1]['size'] = size_2
+       # print(a_dikt_list)
+       json_slring = json.dumps(a_dikt_list, indent=4)
+       json_file = open("VK_PHOTO.json", 'w')
+       json_file.write(json_slring)
+       json_file.closed
+       if digit != len(final_photo):
+           for ii in range(0, (len(final_photo) - digit)):
+               final_photo.pop(-1)
+       # pprint(final_photo)
+       return final_photo
 class YandexDisk:
     def __init__(self, token):
         self.token = token
@@ -81,19 +114,20 @@ class YandexDisk:
 
     def upload_vk(self, query):
         upload_url = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
-        for photo in query:
+        for photo in tqdm(query):
             headers = self.get_headers()
-            params = {"url": photo[0], "path": f'VK_photos/{photo[1]}.jpeg', "overwrite": "true"}
+            params = {"url": photo[0], "path": f'VK_photos/{photo[1]}.jpg', "overwrite": "true"}
             requests.post(upload_url, headers=headers, params=params)
 
 if __name__ == '__main__':
-    access_token = '...'
+
+    access_token = config.password_2
     owner_id = 1
     vk = VK(access_token, owner_id)
 
-    TOKEN = '...'
+    TOKEN = config.password_1
     ya = YandexDisk(token=TOKEN)
-    mylist = [ya.creat_folder(path='VK_photos'), ya.upload_vk(vk.create_name_photo())]
+    ya.creat_folder(path='VK_photos')
+    ya.upload_vk(vk.create_name_photo())
 
-    for i in tqdm(mylist):
-        time.sleep(0.5)
+
