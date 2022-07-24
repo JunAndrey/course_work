@@ -42,8 +42,8 @@ class VK:
            final_dikt[name_photo[0]].append(name_photo[1]['likes'])
            timestamp = name_photo[1]['date']
            value = datetime.datetime.fromtimestamp(timestamp)
-           final_dikt[name_photo[0]].append(value.strftime('%Y-%m-%d %H:%M:%S'))
-       # pprint(final_dikt)
+           final_dikt[name_photo[0]].append(value.strftime('%Y %m %d'))
+
        return final_dikt
 
    def create_name_photo(self):
@@ -55,10 +55,11 @@ class VK:
                if line[1][1] == other[1][1] and line[0] != other[0]:
                    dub.append(line[1][1])
        for line in final_temp.values():
+
            if line[1] in dub:
                final_photo.append([])
                final_photo[-1].append(line[0])
-               final_photo[-1].append(str(line[1]) + ' ' + line[2])
+               final_photo[-1].append(str(line[1]) + ' ' + str(line[2]))
            else:
                final_photo.append([])
                final_photo[-1].append(line[0])
@@ -69,32 +70,31 @@ class VK:
                digit = int(input(f'Некорректный ввод, введите цифру от 1 до {len(final_photo)}:'))
            else: break
 
-
-       # a_dikt = {}
        a_dikt_list = []
        index = 0
        for ln in final_photo:
-           index += 1
-           if index == (digit + 1): break
-           a_dikt_list.append({})
-           if 'size' in ln[0]:
+            index += 1
+            if index == (digit + 1): break
+            a_dikt_list.append({})
+            if 'size' in ln[0]:
                 size_1 = ln[0].split('=')[1].split('&')[0]
                 a_dikt_list[-1]['file_name'] = ln[1] + '.jpg'
                 a_dikt_list[-1]['size'] = size_1
-           else:
+            else:
                 size_2 = ln[0].split('/')[6].split('_')[0]
                 a_dikt_list[-1]['file_name'] = ln[1] + '.jpg'
                 a_dikt_list[-1]['size'] = size_2
-       # print(a_dikt_list)
-       json_slring = json.dumps(a_dikt_list, indent=4)
+
+       json_string = json.dumps(a_dikt_list, indent=4)
        json_file = open("VK_PHOTO.json", 'w')
-       json_file.write(json_slring)
+       json_file.write(json_string)
        json_file.closed
        if digit != len(final_photo):
-           for ii in range(0, (len(final_photo) - digit)):
-               final_photo.pop(-1)
-       # pprint(final_photo)
+            for ii in range(len(final_photo) - digit):
+                final_photo.pop(-1)
+
        return final_photo
+
 class YandexDisk:
     def __init__(self, token):
         self.token = token
@@ -115,19 +115,20 @@ class YandexDisk:
     def upload_vk(self, query):
         upload_url = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
         for photo in tqdm(query):
+            time.sleep(0.3)
             headers = self.get_headers()
             params = {"url": photo[0], "path": f'VK_photos/{photo[1]}.jpg', "overwrite": "true"}
-            requests.post(upload_url, headers=headers, params=params)
+            print(requests.post(upload_url, headers=headers, params=params))
 
 if __name__ == '__main__':
 
     access_token = config.password_2
-    owner_id = 1
+    owner_id = 64281294
     vk = VK(access_token, owner_id)
 
     TOKEN = config.password_1
     ya = YandexDisk(token=TOKEN)
     ya.creat_folder(path='VK_photos')
-    ya.upload_vk(vk.create_name_photo())
+    ya.upload_vk(query=vk.create_name_photo())
 
 
